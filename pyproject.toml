@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools >= 61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+
+[project]
+name = "foobench"
+version = "0.1.0"
+authors = [
+    { name="Ben Hartl", email="hartl.bene.software@gmail.com" },
+    { name="Yanbo Zhang", email="zhangybspm@gmail.com" },
+    { name="Hananel Hazan", email="hananel@hazan.org.il" },
+]
+description = "A collection of optimization function benchmarks."
+readme = "README.md"
+requires-python = ">=3.6"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Topic :: Scientific/Engineering :: Optimization",
+    "Topic :: Scientific/Engineering :: Benchmark",
+    "Topic :: Software Development :: Version Control :: Git",
+]
+dependencies = [
+    "torch >= 2.0",
+    "numpy >= 1.24",
+    "matplotlib >= 3.7",
+]
+
+[tool.setuptools]
+py-modules = ["foobench"]
