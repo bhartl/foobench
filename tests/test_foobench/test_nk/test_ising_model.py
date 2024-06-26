@@ -31,3 +31,15 @@ class TestIsingModel(TestCase):
         x[::2] = -1
         y = model(x)
         assert y == n * J
+
+    def test_ising_objective(self):
+        n_batches = 5
+        n_spins = 10
+        objective_dict = {"foo": "IsingModel", "foo_module": "foobench.nk", "foo_kwargs": {"n": n_spins, "J": 1.}}
+        from foobench.objective import Objective
+        o = Objective(**objective_dict)
+
+        import torch
+        x = torch.randn(n_batches, n_spins)  # bach, num spins
+        y = o(x)
+

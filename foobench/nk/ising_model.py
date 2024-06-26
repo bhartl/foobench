@@ -49,7 +49,7 @@ class SpingGlassModel(NKModel):
 
 
 class IsingModel(SpingGlassModel):
-    def __init__(self, n, J, scale=1.):
+    def __init__(self, n, J=1., scale=1.):
         interaction_matrix = SpingGlassModel.generate_k_neighbor_interactions(n=n, k=3)
         SpingGlassModel.__init__(self, interaction_matrix=interaction_matrix,
                                  J=J, loc=(-1, 1), scale=scale)
