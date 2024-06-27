@@ -21,24 +21,32 @@ def apply_limits(f, x, val=0., limits=()):
     elif len(limits) == 1:
         limits = [limits[0]] * x.shape[1]
 
-    for i in range(x.shape[1]):
-        exceeding = torch.logical_or(x[:, i] > limits[i], x[:, i] < -limits[i])
-        f[exceeding] = val
+    limits = torch.tensor(limits, device=x.device)
+    # check if limits are tuples
+    if len(limits.shape) == 2:
+        lower_bound = limits[:, 0]
+        upper_bound = limits[:, 1]
 
+    else:
+        lower_bound = -limits
+        upper_bound = limits
+
+    exceeding = torch.logical_or(x < lower_bound[None, :], (x > upper_bound[None, :]))
+    f[exceeding.any(dim=1)] = val
     return f
 
 
 class Objective:
-    def __init__(self, foo: Union[str, callable] = "rastrigin", dim=2, reverse=False,
-                 parameter_range: Union[int, tuple] = 4, foo_module=None, foo_kwargs=(),
-                 apply_limits=False, limit_val=0.,):
+    def __init__(self, foo: Union[str, callable] = "rastrigin", dim=2, maximize=False,
+                 foo_module=None, foo_kwargs=(),
+                 limits: Union[int, tuple] = 4, apply_limits=False, limit_val=0.,):
         self.dim = dim
         self.foo_module = foo_module
         self._foo = None
         self.foo = foo
         self.foo_kwargs = foo_kwargs or {}
-        self.reverse = reverse
-        self.parameter_range = parameter_range
+        self.maximize = maximize
+        self.limits = limits
         self.apply_limits = apply_limits
         self.limit_val = limit_val
 
@@ -64,13 +72,16 @@ class Objective:
         return self.foo.__name__
 
     def __call__(self, x):
+        if not isinstance(x, torch.Tensor):
+            x = torch.tensor(x, dtype=torch.float32)
+
         # check limits
         if isinstance(self.foo, type):
             foo = self.foo(**self.foo_kwargs)
         else:
             foo = partial(self.foo, **self.foo_kwargs)
 
-        if not self.reverse:
+        if not self.maximize:
             f = foo(x)
         else:
             f = -foo(x)
@@ -78,13 +89,10 @@ class Objective:
         if not apply_limits:
             return f
 
-        return apply_limits(f, x, val=self.limit_val, limits=self.parameter_range)
+        return apply_limits(f, x, val=self.limit_val, limits=self.limits)
 
-    def visualize(self, ax=None, n_points=100, show=True, logscale=False, parameter_range=None):
-        import matplotlib.pyplot as plt
-        import torch
-
-        parameter_range = parameter_range if parameter_range is not None else self.parameter_range
+    def eval_on_range(self, n_points=100, parameter_range=None):
+        parameter_range = parameter_range if parameter_range is not None else self.limits
 
         if hasattr(parameter_range, '__len__'):
             range_x = parameter_range[0]
@@ -105,13 +113,21 @@ class Objective:
         X, Y = torch.meshgrid(x, y)
         Z = self(torch.stack([X, Y], dim=-1).reshape(-1, 2)).reshape(*X.shape)
 
+        return (X, range_x), (Y, range_y), Z
+
+    def visualize(self, ax=None, n_points=100, show=False, logscale=False, parameter_range=None):
+        import matplotlib.pyplot as plt
+        import torch
+
+        (X, range_x), (Y, range_y), Z = self.eval_on_range(n_points=n_points, parameter_range=parameter_range)
+
         if logscale:
             Z = torch.log(Z + 1)
 
         if ax is None:
             fig, ax = plt.subplots(1, 1)
 
-        ax.imshow(Z.T, extent=(*range_x, *reversed(range_y)))
+        im = ax.imshow(Z.T, extent=(*range_x, *reversed(range_y)))
         ax.invert_yaxis()
 
         #ax.contour(X, Y, Z, levels=20, cmap='magma')
@@ -122,7 +138,7 @@ class Objective:
         if show:
             plt.show()
 
-        return ax
+        return im
 
     @classmethod
     def from_json(cls, json_repr):
@@ -137,9 +153,9 @@ class Objective:
         [dict_repr.pop(k) for k in keys if k.startswith('_')]
 
         # check if parameter_range contains tuples or np.arrays, recursively convert to list
-        if hasattr(dict_repr['parameter_range'], '__len__'):
-            dict_repr['parameter_range'] = [list(pr) if hasattr(pr, '__len__') else pr for pr in
-                                            dict_repr['parameter_range']]
+        if hasattr(dict_repr['limits'], '__len__'):
+            dict_repr['limits'] = [list(pr) if hasattr(pr, '__len__') else pr for pr in
+                                   dict_repr['limits']]
 
         return dict_repr
 
