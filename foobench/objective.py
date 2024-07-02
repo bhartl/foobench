@@ -92,53 +92,31 @@ class Objective:
         return apply_limits(f, x, val=self.limit_val, limits=self.limits)
 
     def eval_on_range(self, n_points=100, parameter_range=None):
+        """ Evaluate the ND objective function on a meshgrid. """
         parameter_range = parameter_range if parameter_range is not None else self.limits
+        if not hasattr(parameter_range, '__len__'):
+            parameter_range = [parameter_range] * self.dim
 
-        if hasattr(parameter_range, '__len__'):
-            range_x = parameter_range[0]
-            range_y = parameter_range[1]
+        # Create a list of 1D tensors for each dimension
+        ranges = []
+        for pr in parameter_range:
+            if not hasattr(pr, '__len__'):
+                pr = torch.tensor([-pr, pr])
+            ranges.append(torch.linspace(*pr, n_points))
 
-        else:
-            range_x = parameter_range
-            range_y = parameter_range
+        # Create a meshgrid with n dimensions
+        mesh = torch.meshgrid(*ranges)
 
-        if not hasattr(range_x, '__len__'):
-            range_x = torch.tensor([-range_x, range_x])
+        # Stack and reshape the meshgrid to pass it to the objective function
+        stacked_mesh = torch.stack(mesh, dim=-1).reshape(-1, self.dim)
 
-        if not hasattr(range_y, '__len__'):
-            range_y = torch.tensor([-range_y, range_y])
+        # Evaluate the objective function
+        Z = self(stacked_mesh)
 
-        x = torch.linspace(*range_y, n_points)
-        y = torch.linspace(*range_y, n_points)
-        X, Y = torch.meshgrid(x, y)
-        Z = self(torch.stack([X, Y], dim=-1).reshape(-1, 2)).reshape(*X.shape)
+        # Reshape the output of the objective function into the shape of the meshgrid
+        Z = Z.reshape(*[len(r) for r in ranges])
 
-        return (X, range_x), (Y, range_y), Z
-
-    def visualize(self, ax=None, n_points=100, show=False, logscale=False, parameter_range=None):
-        import matplotlib.pyplot as plt
-        import torch
-
-        (X, range_x), (Y, range_y), Z = self.eval_on_range(n_points=n_points, parameter_range=parameter_range)
-
-        if logscale:
-            Z = torch.log(Z + 1)
-
-        if ax is None:
-            fig, ax = plt.subplots(1, 1)
-
-        im = ax.imshow(Z.T, extent=(*range_x, *reversed(range_y)))
-        ax.invert_yaxis()
-
-        #ax.contour(X, Y, Z, levels=20, cmap='magma')
-        ax.set_xlabel('X')
-        ax.set_ylabel('Y')
-        ax.set_title(f"{self.foo.__name__}")
-
-        if show:
-            plt.show()
-
-        return im
+        return *((m, [r[0], r[-1]]) for m, r in zip(mesh, ranges)), Z
 
     @classmethod
     def from_json(cls, json_repr):
