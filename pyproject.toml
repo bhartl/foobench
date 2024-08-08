@@ -6,7 +6,7 @@ version = "2024.0.0a1"
 
 [project]
 name = "foobench"
-version = "0.1.0"
+version = "0.1.0a1"
 authors = [
     { name="Ben Hartl", email="hartl.bene.software@gmail.com" },
     { name="Yanbo Zhang", email="zhangybspm@gmail.com" },
