@@ -34,3 +34,4 @@ dependencies = [
 
 [tool.setuptools]
 py-modules = ["foobench"]
+packages = ["foobench"]
