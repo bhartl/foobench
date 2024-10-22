@@ -2,8 +2,9 @@
 A collection of optimization function benchmarks
 
 ## Install
+Download the github repository, unpack, and navigate into the repositories root folder. From within your desired python environment, you may install the repository [optionally in developer mode] via
 ```bash
-pip install -e .
+pip install [-e] .
 ```
 
 ## Structure
