@@ -2,7 +2,7 @@
 A collection of optimization function benchmarks
 
 ## Install
-Download the github repository, unpack, and navigate into the repository's root folder ``cd foobench`. From within your desired python environment, you may install the repository [optionally in developer mode] via
+Download the github repository, unpack, and navigate into the repository's root folder `cd foobench`. From within your desired python environment, you may install the repository [optionally in developer mode] via
 ```bash
 pip install [-e] .
 ```
